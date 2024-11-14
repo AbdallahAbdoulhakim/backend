@@ -10,6 +10,7 @@ const morgan = require("morgan");
 const { createWriteStream } = require("fs");
 const path = require("path");
 const authRouter = require("./routes/authRoutes");
+const postRouter = require("./routes/postRoutes");
 const { loginMiddleware } = require("./middlewares/authMiddlewares");
 
 const { createUser, loginUser } = require("./controller/userControl");
@@ -34,8 +35,9 @@ app.get("/api", (req, res) => {
 app.post("/register", createUser);
 app.post("/login", loginUser);
 
-app.use("/api/user", loginMiddleware);
-app.use("/api/user", authRouter);
+app.use("/api/user", loginMiddleware, authRouter);
+
+app.use("/api/post", postRouter);
 
 app.use(notFound);
 app.use(errorHandler);

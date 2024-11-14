@@ -30,7 +30,7 @@ const loginMiddleware = asyncHandler(async (req, res, next) => {
       id: user.id,
       firstname: user.firstname,
       lastname: user.lastname,
-      email: user.lastname,
+      email: user.email,
       mobile: user.mobile,
       isActive: user.isActive,
       isAdmin: user.isAdmin,
