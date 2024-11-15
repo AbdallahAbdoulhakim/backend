@@ -1,6 +1,7 @@
 const postModel = require("../models/postModel");
 const asyncHandler = require("express-async-handler");
 const userModel = require("../models/userModel");
+const ObjectId = require("mongoose").Types.ObjectId;
 
 const createPost = asyncHandler(async (req, res, next) => {
   try {
@@ -47,18 +48,16 @@ const getPost = asyncHandler(async (req, res, next) => {
           id: retrievedUser.id,
           firstname: retrievedUser.firstname,
           lastname: retrievedUser.lastname,
-          email: retrievedUser.email,
-          mobile: retrievedUser.mobile,
-          isActive: retrievedUser.isActive,
-          isAdmin: retrievedUser.isAdmin,
         }
       : null;
 
     res.status(200).json({
       success: true,
       data: {
-        success: true,
-        data: { id: post._id, user: user, title: post.title, body: post.body },
+        id: post._id,
+        user: user,
+        title: post.title,
+        body: post.body,
       },
       message: "Post retrieved successfully!",
     });
@@ -68,17 +67,48 @@ const getPost = asyncHandler(async (req, res, next) => {
 });
 
 const getPosts = asyncHandler(async (req, res, next) => {
+  const postLabels = {
+    totalDocs: "postsCount",
+    docs: "postsList",
+    page: "currentPage",
+  };
+
   try {
-    const posts = await postModel.find();
+    const { offset, limit, search } = req?.query;
+
+    const options = {
+      offset: parseInt(offset) ? parseInt(offset) : 0,
+      limit: parseInt(limit)
+        ? parseInt(limit) > 10
+          ? 10
+          : parseInt(limit)
+        : 5,
+      customLabels: postLabels,
+      sort: { createdAt: -1 },
+    };
+
+    const query = search
+      ? {
+          $or: [
+            { title: { $regex: search, $options: "i" } },
+            { body: { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    const result = await postModel.paginate(query, options);
 
     res.status(200).json({
       success: true,
-      data: posts.map((post) => ({
-        id: post._id,
-        userId: post.user,
-        title: post.title,
-        body: post.body,
-      })),
+      data: {
+        ...result,
+        postsList: result.postsList.map((post) => ({
+          id: post._id,
+          userId: post.user,
+          title: post.title,
+          body: post.body,
+        })),
+      },
       message: "Posts retrievd successfully",
     });
   } catch (error) {
@@ -86,4 +116,138 @@ const getPosts = asyncHandler(async (req, res, next) => {
   }
 });
 
-module.exports = { createPost, getPost, getPosts };
+const updatePost = asyncHandler(async (req, res, next) => {
+  try {
+    const user = await userModel.findById(res?.user?.id);
+    let newOwner = {};
+
+    if (!user) {
+      res.status(401);
+      throw new Error("Unauthenticated : User does not exist ! ");
+    }
+
+    let post = await postModel.findById(req?.params?.id);
+
+    if (!post) {
+      res.status(404);
+      throw new Error("Post does not exist ! ");
+    }
+
+    const owner = await userModel.findById(post.user);
+
+    if (
+      (owner._id !== user._id && !user.isAdmin) ||
+      (!owner.isActive && owner._id === user._id)
+    ) {
+      res.status(403);
+      throw new Error(
+        "Unauthorized : User is not allowed to access this resource"
+      );
+    }
+
+    if (
+      !Object.keys(req?.body).includes("title") &&
+      !Object.keys(req?.body).includes("body") &&
+      !Object.keys(req?.body).includes("user")
+    ) {
+      res.status(400);
+      throw new Error(
+        "Bad request : Please provide  the title or the body to be updated!"
+      );
+    }
+
+    if (req.body?.user) {
+      const isValid = ObjectId.isValid(req.body.user);
+      if (!isValid) {
+        res.status(400);
+        throw new Error("Bad request: provided user is not a valid bson id!");
+      }
+      newOwner = await userModel.findById(req.body.user);
+
+      if (!newOwner) {
+        res.status(400);
+        throw new Error("Bad request: provided user does not exist!");
+      }
+    }
+
+    const newPost = await postModel.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+
+    const userPost = Object.keys(newOwner).length
+      ? {
+          id: newOwner.id,
+          firstname: newOwner.firstname,
+          lastname: newOwner.lastname,
+        }
+      : {
+          id: owner.id,
+          firstname: owner.firstname,
+          lastname: owner.lastname,
+        };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        id: newPost._id,
+        user: userPost,
+        title: newPost.title,
+        body: newPost.body,
+      },
+      message: "Post updated successfully!",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+const deletePost = asyncHandler(async (req, res, next) => {
+  try {
+    const user = await userModel.findById(res?.user?.id);
+
+    if (!user) {
+      res.status(401);
+      throw new Error("Unauthenticated : User does not exist ! ");
+    }
+
+    let post = await postModel.findById(req?.params?.id);
+
+    if (!post) {
+      res.status(404);
+      throw new Error("Post does not exist ! ");
+    }
+
+    const owner = await userModel.findById(post.user);
+
+    if (
+      (owner._id !== user._id && !user.isAdmin) ||
+      (!owner.isActive && owner._id === user._id)
+    ) {
+      res.status(403);
+      throw new Error(
+        "Unauthorized : User is not allowed to access this resource"
+      );
+    }
+
+    const deletedPost = await postModel.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        id: deletedPost._id,
+        user: {
+          id: owner.id,
+          firstname: owner.firstname,
+          lastname: owner.lastname,
+        },
+        title: deletedPost.title,
+        body: deletedPost.body,
+      },
+      message: "Post deleted successfully!",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+module.exports = { createPost, getPost, getPosts, updatePost, deletePost };
