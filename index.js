@@ -9,8 +9,11 @@ const morgan = require("morgan");
 
 const { createWriteStream } = require("fs");
 const path = require("path");
+
 const authRouter = require("./routes/authRoutes");
 const postRouter = require("./routes/postRoutes");
+const commentRouter = require("./routes/commentRoutes");
+
 const { loginMiddleware } = require("./middlewares/authMiddlewares");
 
 const { createUser, loginUser } = require("./controller/userControl");
@@ -38,6 +41,7 @@ app.post("/login", loginUser);
 app.use("/api/user", loginMiddleware, authRouter);
 
 app.use("/api/post", postRouter);
+app.use("/api/comment", commentRouter);
 
 app.use(notFound);
 app.use(errorHandler);

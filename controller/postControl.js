@@ -85,6 +85,7 @@ const getPosts = asyncHandler(async (req, res, next) => {
         : 5,
       customLabels: postLabels,
       sort: { createdAt: -1 },
+      populate: "user",
     };
 
     const query = search
@@ -98,17 +99,22 @@ const getPosts = asyncHandler(async (req, res, next) => {
 
     const result = await postModel.paginate(query, options);
 
+    const postsList = result.postsList.map((post) => ({
+      id: post.id,
+      user: {
+        id: post.user._id,
+        firstname: post.user.firstname,
+        lastname: post.user.lastname,
+      },
+      title: post.title,
+      body: post.body,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+    }));
+
     res.status(200).json({
       success: true,
-      data: {
-        ...result,
-        postsList: result.postsList.map((post) => ({
-          id: post._id,
-          userId: post.user,
-          title: post.title,
-          body: post.body,
-        })),
-      },
+      data: { ...result, postsList: postsList },
       message: "Posts retrievd successfully",
     });
   } catch (error) {
