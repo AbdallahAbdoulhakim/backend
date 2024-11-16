@@ -35,6 +35,9 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  refreshToken: {
+    type: String,
+  },
 });
 
 userSchema.methods.verify = async function (plainPassword) {

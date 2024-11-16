@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 
 const loginMiddleware = asyncHandler(async (req, res, next) => {
   try {
-    const token = req?.token;
+    const token = req.cookies?.jwttoken || req?.token;
     const decoded = await jwt.decode(token, process.env.JWT_SECRET);
 
     if (!token || !decoded) {

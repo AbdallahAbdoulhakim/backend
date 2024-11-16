@@ -15,6 +15,7 @@ const postRouter = require("./routes/postRoutes");
 const commentRouter = require("./routes/commentRoutes");
 
 const { loginMiddleware } = require("./middlewares/authMiddlewares");
+const cookieParser = require("cookie-parser");
 
 const { createUser, loginUser } = require("./controller/userControl");
 
@@ -29,6 +30,7 @@ dbConnect();
 app.use(morgan("combined", { stream: logFs }));
 
 app.use(bearerToekn());
+app.use(cookieParser());
 app.use(express.json());
 
 app.get("/api", (req, res) => {

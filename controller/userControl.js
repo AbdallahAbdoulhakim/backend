@@ -207,6 +207,11 @@ const loginUser = asyncHandler(async (req, res, next) => {
       expiresIn: "1d",
     });
 
+    res.cookie("jwttoken", token, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
     res.status(200).json({
       success: true,
       message: "User successfully logged in",
