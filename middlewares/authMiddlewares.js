@@ -75,4 +75,14 @@ const ownMiddleware = (req, res, next) => {
   }
 };
 
-module.exports = { loginMiddleware, adminMiddleware, ownMiddleware };
+const allowAllOrigin = (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  next();
+};
+
+module.exports = {
+  loginMiddleware,
+  adminMiddleware,
+  ownMiddleware,
+  allowAllOrigin,
+};

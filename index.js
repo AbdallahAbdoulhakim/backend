@@ -14,7 +14,10 @@ const authRouter = require("./routes/authRoutes");
 const postRouter = require("./routes/postRoutes");
 const commentRouter = require("./routes/commentRoutes");
 
-const { loginMiddleware } = require("./middlewares/authMiddlewares");
+const {
+  loginMiddleware,
+  allowAllOrigin,
+} = require("./middlewares/authMiddlewares");
 const cookieParser = require("cookie-parser");
 
 const { createUser, loginUser } = require("./controller/userControl");
@@ -32,6 +35,7 @@ app.use(morgan("combined", { stream: logFs }));
 app.use(bearerToekn());
 app.use(cookieParser());
 app.use(express.json());
+app.use(allowAllOrigin);
 
 app.get("/api", (req, res) => {
   res.json({ success: true, message: "Welcome to the API" });
