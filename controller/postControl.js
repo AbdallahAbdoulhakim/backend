@@ -58,6 +58,8 @@ const getPost = asyncHandler(async (req, res, next) => {
         user: user,
         title: post.title,
         body: post.body,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
       },
       message: "Post retrieved successfully!",
     });
